@@ -21,7 +21,7 @@ export function RecorderPanel(props: {
   const showStop = props.state === "recording";
   const showReset = props.state === "error";
   const showQuickStart = props.state === "idle" || props.state === "error";
-  const hotkeyLabel = formatHotkeyLabel(props.hotkey?.trim() || "Ctrl+Shift+Space");
+  const hotkeyLabel = props.hotkey?.trim() || "Ctrl+Shift+Space";
   const modeLabel = props.modeLabel ?? "Auto (LLM decides)";
   const languageLabel = props.languageLabel ?? "Auto";
 
@@ -96,8 +96,4 @@ export function RecorderPanel(props: {
       </div>
     </div>
   );
-}
-
-function formatHotkeyLabel(value: string) {
-  return value.replace(/Space/g, "SPACE");
 }
