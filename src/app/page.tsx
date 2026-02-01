@@ -695,6 +695,7 @@ export default function Home() {
                 transportTone={activeTransport === "realtime" ? "realtime" : "batch"}
                 error={error}
                 notice={notice}
+                hotkey={settings?.hotkey}
               />
             )}
           </section>
