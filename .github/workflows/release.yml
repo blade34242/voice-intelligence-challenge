@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Build release
-        run: npm run pack
+        run: npm run pack -- --publish=never
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,10 +39,24 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: everlast-${{ matrix.os }}
-          path: release/**
+          path: |
+            release/*.AppImage
+            release/*.exe
+            release/*.msi
+            release/*.zip
+            release/*.dmg
+            release/*.yml
+            release/*.blockmap
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/**
+          files: |
+            release/*.AppImage
+            release/*.exe
+            release/*.msi
+            release/*.zip
+            release/*.dmg
+            release/*.yml
+            release/*.blockmap
