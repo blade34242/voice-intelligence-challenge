@@ -50,6 +50,7 @@ export type SettingsSafe = {
   sttLanguage: string;
   sttModel: string;
   sttTransport: string;
+  hotkeyError?: string | null;
 };
 
 export type IpcEventMap = {
@@ -79,6 +80,7 @@ export type IpcInvokeMap = {
     sttTransport?: string;
     hotkey?: string;
   };
+  "settings.reset": undefined;
   "settings.open": undefined;
   "stt.start": undefined;
   "stt.audioFrame": { pcm16Buffer: ArrayBuffer };

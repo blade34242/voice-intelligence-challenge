@@ -5,6 +5,7 @@ const validChannels = new Set([
   "overlay.hide",
   "settings.get",
   "settings.set",
+  "settings.reset",
   "settings.open",
   "stt.start",
   "stt.audioFrame",

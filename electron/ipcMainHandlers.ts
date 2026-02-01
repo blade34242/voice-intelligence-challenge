@@ -4,7 +4,7 @@ import path from "path";
 import { SttClient } from "./sttClient";
 import { checkRealtimeAccess } from "./realtimeSttClient";
 import { enrichTranscript, updateWithFollowUp } from "./enrichLlm";
-import { getSettingsSafe, setSettings } from "./settings";
+import { DEFAULT_HOTKEY, getSettingsSafe, resetSettings, setSettings } from "./settings";
 import { Mode } from "../src/lib/schemas";
 import { sendWebhook, WebhookPayload } from "./n8nWebhook";
 import { getRun, listRuns, renameRun, saveRun } from "./historyDb";
@@ -44,11 +44,20 @@ export function registerIpcHandlers(params: {
         throw new Error("Hotkey cannot be empty.");
       }
       if (onHotkeyChange && !onHotkeyChange(nextHotkey)) {
-        throw new Error("Hotkey could not be registered. It may be in use by the system.");
+        throw new Error(buildHotkeyError());
       }
     }
     setSettings(payload);
     return getSettingsSafe();
+  });
+
+  ipcMain.handle("settings.reset", () => {
+    let hotkeyError: string | null = null;
+    if (onHotkeyChange && !onHotkeyChange(DEFAULT_HOTKEY)) {
+      hotkeyError = buildHotkeyError();
+    }
+    resetSettings();
+    return { ...getSettingsSafe(), hotkeyError };
   });
 
   ipcMain.handle("settings.open", () => {
@@ -243,4 +252,13 @@ function deriveRunName(result: any) {
   if (data?.name) return String(data.name);
   if (result?.summary) return String(result.summary).slice(0, 60);
   return "Untitled Run";
+}
+
+function buildHotkeyError() {
+  const base = "Hotkey could not be registered. It may be in use by the system.";
+  const isWayland = process.platform === "linux" && (process.env.XDG_SESSION_TYPE === "wayland" || process.env.WAYLAND_DISPLAY);
+  if (isWayland) {
+    return `${base} On Wayland, global shortcuts are often blocked. Try X11.`;
+  }
+  return base;
 }

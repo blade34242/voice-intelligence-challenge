@@ -24,6 +24,9 @@ export function SettingsModal(props: {
   const [sttLanguage, setSttLanguage] = useState("auto");
   const [sttModel, setSttModel] = useState("gpt-4o-transcribe");
   const [sttTransport, setSttTransport] = useState("batch");
+  const [captureActive, setCaptureActive] = useState(false);
+  const [captureHint, setCaptureHint] = useState("");
+  const [resetHint, setResetHint] = useState("");
   const [realtimeCheck, setRealtimeCheck] = useState<{ status: "idle" | "checking" | "ok" | "error"; message: string }>({
     status: "idle",
     message: ""
@@ -37,13 +40,40 @@ export function SettingsModal(props: {
       setSttLanguage(props.settings.sttLanguage ?? "auto");
       setSttModel(props.settings.sttModel ?? "gpt-4o-transcribe");
       setSttTransport(props.settings.sttTransport ?? "batch");
-      setHotkey(props.settings.hotkey ?? "");
+      setHotkey(props.settings.hotkey ?? "CommandOrControl+Shift+Space");
       setHotkeyTouched(false);
+      setCaptureActive(false);
+      setCaptureHint("");
+      setResetHint("");
       setN8nSharedSecret("");
       setN8nSecretTouched(false);
       setRealtimeCheck({ status: "idle", message: "" });
     }
   }, [props.settings]);
+
+  useEffect(() => {
+    if (!captureActive) return;
+    const handler = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === "Escape") {
+        setCaptureActive(false);
+        setCaptureHint("Capture cancelled.");
+        return;
+      }
+      const next = formatHotkey(event);
+      if (!next) {
+        setCaptureHint("Press a key combination with at least one modifier.");
+        return;
+      }
+      setHotkey(next);
+      setHotkeyTouched(true);
+      setCaptureActive(false);
+      setCaptureHint(`Captured: ${next}`);
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
+  }, [captureActive]);
 
   if (!props.open) return null;
 
@@ -65,15 +95,20 @@ export function SettingsModal(props: {
         </label>
         <label>
           Hotkey
-          <input
-            type="text"
-            value={hotkey}
-            placeholder="CommandOrControl+Shift+Space"
-            onChange={(event) => {
-              setHotkeyTouched(true);
-              setHotkey(event.target.value);
-            }}
-          />
+          <div className="settings-row">
+            <input type="text" value={hotkey} readOnly />
+            <button
+              className="secondary"
+              onClick={() => {
+                setCaptureHint("Press your hotkey...");
+                setCaptureActive(true);
+              }}
+              disabled={captureActive}
+            >
+              {captureActive ? "Listening..." : "Record"}
+            </button>
+          </div>
+          {captureHint ? <span className="settings-hint">{captureHint}</span> : null}
         </label>
         <label>
           Transcription Transport
@@ -197,11 +232,88 @@ export function SettingsModal(props: {
           >
             Save
           </button>
+          <button
+            className="secondary"
+            onClick={async () => {
+              if (!ipcClient.isAvailable()) {
+                setResetHint("Electron IPC unavailable.");
+                return;
+              }
+              try {
+                const data = await ipcClient.invoke("settings.reset");
+                setApiKey("");
+                setApiKeyTouched(false);
+                setN8nWebhookUrl(data?.n8nWebhookUrl ?? "");
+                setN8nSharedSecret("");
+                setN8nSecretTouched(false);
+                setSttLanguage(data?.sttLanguage ?? "auto");
+                setSttModel(data?.sttModel ?? "gpt-4o-transcribe");
+                setSttTransport(data?.sttTransport ?? "batch");
+                setHotkey(data?.hotkey ?? "CommandOrControl+Shift+Space");
+                setHotkeyTouched(false);
+                setCaptureActive(false);
+                setCaptureHint("");
+                setRealtimeCheck({ status: "idle", message: "" });
+                if (data?.hotkeyError) {
+                  setResetHint(data.hotkeyError);
+                } else {
+                  setResetHint("Settings reset to defaults.");
+                }
+              } catch (err: any) {
+                setResetHint(err?.message ?? "Reset failed.");
+              }
+            }}
+          >
+            Reset
+          </button>
           <button className="secondary" onClick={props.onClose}>
             Close
           </button>
         </div>
+        {resetHint ? <span className="settings-hint">{resetHint}</span> : null}
       </div>
     </div>
   );
+}
+
+function formatHotkey(event: KeyboardEvent) {
+  const key = normalizeKey(event.key, event.code);
+  if (!key) return null;
+
+  const modifiers: string[] = [];
+  if (event.metaKey || event.ctrlKey) {
+    modifiers.push("CommandOrControl");
+  }
+  if (event.altKey) {
+    modifiers.push("Alt");
+  }
+  if (event.shiftKey) {
+    modifiers.push("Shift");
+  }
+
+  if (modifiers.length === 0) return null;
+  if (isModifierKey(key)) return null;
+
+  return [...modifiers, key].join("+");
+}
+
+function normalizeKey(key: string, code: string) {
+  if (key === " ") return "Space";
+  if (key === "ArrowUp") return "Up";
+  if (key === "ArrowDown") return "Down";
+  if (key === "ArrowLeft") return "Left";
+  if (key === "ArrowRight") return "Right";
+  if (key === "Escape") return "Escape";
+  if (key === "Backspace") return "Backspace";
+  if (key === "Delete") return "Delete";
+  if (key === "Tab") return "Tab";
+  if (key === "Enter") return "Return";
+  if (key.startsWith("F") && key.length <= 3) return key.toUpperCase();
+  if (key.length === 1) return key.toUpperCase();
+  if (code === "Space") return "Space";
+  return key ? key[0].toUpperCase() + key.slice(1) : null;
+}
+
+function isModifierKey(key: string) {
+  return key === "Shift" || key === "Control" || key === "Alt" || key === "Meta";
 }
