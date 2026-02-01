@@ -83,7 +83,11 @@ async function persistDb(database: Database) {
   fs.writeFileSync(getDbPath(), Buffer.from(data));
 }
 
-function queryRows(database: Database, sql: string, params: unknown[] = []) {
+function queryRows(
+  database: Database,
+  sql: string,
+  params: Array<string | number | null | Uint8Array> = []
+) {
   const stmt = database.prepare(sql);
   stmt.bind(params);
   const rows: Record<string, unknown>[] = [];
