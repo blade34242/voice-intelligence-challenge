@@ -1,0 +1,53 @@
+{
+  "name": "everlast-voice-intel",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"cross-env PORT=3001 next dev\" \"cross-env ELECTRON_IS_DEV=1 ELECTRON_DISABLE_SANDBOX=1 NEXT_DEV_URL=http://localhost:3001 TS_NODE_PROJECT=electron/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 electron --no-sandbox electron/main.cjs\"",
+    "build": "next build && tsc -p electron/tsconfig.json && node electron/copy-assets.cjs",
+    "pack": "npm run build && electron-builder",
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.0",
+    "electron-store": "^8.1.0",
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^9.0.1",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^30.0.9",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "build": {
+    "appId": "com.everlast.voice",
+    "productName": "Everlast Voice Intelligence",
+    "win": {
+      "icon": "electron/assets/icon.ico"
+    },
+    "files": [
+      "dist/electron/**/*",
+      "electron/assets/**/*",
+      "assets/**/*",
+      "dist/src/lib/**/*",
+      "out/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  }
+}
