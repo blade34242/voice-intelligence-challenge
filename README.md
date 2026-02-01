@@ -23,7 +23,7 @@ Ablauf: **Hotkey → Aufnahme → Transkription → Enrichment → Ergebnis (eve
 - LLM‑Enrichment (Responses API)
 - Clipboard + Datei‑Export
 - Settings (API‑Key, Webhook, Sprache)
-- **SQLite History** (Runs, Follow‑Ups, Change‑Log)
+- **SQLite History (sql.js / WASM)** (Runs, Follow‑Ups, Change‑Log)
 
 ### Preload (Sicherer IPC‑Bridge)
 - `contextBridge` mit whitelisted IPC‑Calls
@@ -41,14 +41,14 @@ Ablauf: **Hotkey → Aufnahme → Transkription → Enrichment → Ergebnis (eve
 4. Ergebnis wird klassifiziert (Auto‑Mode)
 5. LLM liefert **strukturierte JSON‑Daten**
 6. UI zeigt Summary/Details/Actions + Export/Webhook
-7. Run wird in SQLite gespeichert (inkl. Follow‑Up & Change‑Log)
+7. Run wird in SQLite (WASM) gespeichert (inkl. Follow‑Up & Change‑Log)
 
 ---
 
 ## Setup
 
 ### Voraussetzungen
-- Node.js (empfohlen: **24+** via nvm)
+- Node.js (empfohlen: **22+** via nvm)
 - OpenAI API Key
 
 ### Installation
@@ -80,13 +80,12 @@ npm run pack
 **Windows**
 ```powershell
 npm install
-npm run rebuild:electron
 npm run build
 npm run pack
 ```
 
 Hinweise:
-- Windows braucht evtl. **Build Tools** für native Module (z. B. `better-sqlite3`).
+- Windows benötigt **keine** Build‑Tools (SQLite läuft via **sql.js / WASM**).
 - Cross‑Builds sind nicht zuverlässig: Windows‑Installer → Windows bauen, Linux‑Artefakte → Linux bauen.
 
 ---

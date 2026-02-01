@@ -190,7 +190,7 @@ app.whenReady().then(async () => {
   app.setAppUserModelId("com.everlast.voice");
   await initSettingsStore();
   currentHotkey = getHotkey();
-  initHistoryDb();
+  await initHistoryDb();
   createMainWindow();
   createTray();
   registerHotkey();

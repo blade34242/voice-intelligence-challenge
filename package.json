@@ -7,16 +7,15 @@
     "dev": "concurrently \"cross-env PORT=3001 next dev\" \"cross-env ELECTRON_IS_DEV=1 ELECTRON_DISABLE_SANDBOX=1 NEXT_DEV_URL=http://localhost:3001 TS_NODE_PROJECT=electron/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 electron --no-sandbox electron/main.cjs\"",
     "build": "next build && tsc -p electron/tsconfig.json && node electron/copy-assets.cjs",
     "pack": "npm run build && electron-builder",
-    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "better-sqlite3": "^12.5.0",
     "electron-store": "^10.1.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
+    "sql.js": "^1.13.0",
     "ws": "^8.18.3",
     "zod": "^4.3.6"
   },
@@ -28,7 +27,6 @@
     "cross-env": "^10.0.0",
     "electron": "39.3.0",
     "electron-builder": "^26.0.20",
-    "@electron/rebuild": "^4.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },

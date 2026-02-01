@@ -1,4 +1,5 @@
-import Database from "better-sqlite3";
+import fs from "fs";
+import initSqlJs, { Database, SqlJsStatic } from "sql.js";
 import path from "path";
 import { app } from "electron";
 
@@ -14,13 +15,53 @@ type RunRow = {
   parent_id: number | null;
 };
 
+let sqlPromise: Promise<SqlJsStatic> | null = null;
 let db: Database | null = null;
+let dbPath: string | null = null;
 
-function ensureDb() {
+function getDbPath() {
+  if (!dbPath) {
+    dbPath = path.join(app.getPath("userData"), "everlast.sqlite");
+  }
+  return dbPath;
+}
+
+function resolveWasmPath() {
+  const appPath = app.getAppPath();
+  const resourcesPath = process.resourcesPath;
+  const candidates = [
+    path.join(appPath, "node_modules/sql.js/dist/sql-wasm.wasm"),
+    resourcesPath ? path.join(resourcesPath, "app.asar.unpacked/node_modules/sql.js/dist/sql-wasm.wasm") : null,
+    resourcesPath ? path.join(resourcesPath, "node_modules/sql.js/dist/sql-wasm.wasm") : null,
+    path.join(appPath, "..", "node_modules/sql.js/dist/sql-wasm.wasm")
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error("sql.js wasm not found. Reinstall dependencies or adjust packaging.");
+}
+
+async function loadSqlJs() {
+  if (!sqlPromise) {
+    const wasmPath = resolveWasmPath();
+    const wasmBinary = fs.readFileSync(wasmPath);
+    sqlPromise = initSqlJs({ wasmBinary });
+  }
+  return sqlPromise;
+}
+
+async function ensureDb() {
   if (db) return db;
-  const dbPath = path.join(app.getPath("userData"), "everlast.db");
-  db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
+  const SQL = await loadSqlJs();
+  const filePath = getDbPath();
+  let fileData: Uint8Array | undefined;
+  if (fs.existsSync(filePath)) {
+    fileData = new Uint8Array(fs.readFileSync(filePath));
+  }
+  db = new SQL.Database(fileData);
   db.exec(`
     CREATE TABLE IF NOT EXISTS runs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,11 +78,30 @@ function ensureDb() {
   return db;
 }
 
-export function initHistoryDb() {
-  ensureDb();
+async function persistDb(database: Database) {
+  const data = database.export();
+  fs.writeFileSync(getDbPath(), Buffer.from(data));
 }
 
-export function saveRun(params: {
+function queryRows(database: Database, sql: string, params: unknown[] = []) {
+  const stmt = database.prepare(sql);
+  stmt.bind(params);
+  const rows: Record<string, unknown>[] = [];
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject());
+  }
+  stmt.free();
+  return rows;
+}
+
+export async function initHistoryDb() {
+  const database = await ensureDb();
+  if (!fs.existsSync(getDbPath())) {
+    await persistDb(database);
+  }
+}
+
+export async function saveRun(params: {
   name: string;
   createdAt: string;
   mode: string;
@@ -51,12 +111,12 @@ export function saveRun(params: {
   isFollowUp?: boolean;
   parentId?: number | null;
 }) {
-  const database = ensureDb();
+  const database = await ensureDb();
   const stmt = database.prepare(
     `INSERT INTO runs (name, created_at, mode, transcript, result_json, change_log_json, is_followup, parent_id)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  const info = stmt.run(
+  stmt.run([
     params.name,
     params.createdAt,
     params.mode,
@@ -65,25 +125,30 @@ export function saveRun(params: {
     JSON.stringify(params.changeLog ?? []),
     params.isFollowUp ? 1 : 0,
     params.parentId ?? null
-  );
-  return Number(info.lastInsertRowid);
+  ]);
+  stmt.free();
+  const rows = database.exec("SELECT last_insert_rowid() AS id");
+  const nextId = Number(rows?.[0]?.values?.[0]?.[0] ?? 0);
+  await persistDb(database);
+  return nextId;
 }
 
-export function listRuns(limit = 50) {
-  const database = ensureDb();
-  const stmt = database.prepare(
+export async function listRuns(limit = 50) {
+  const database = await ensureDb();
+  return queryRows(
+    database,
     `SELECT id, name, created_at, mode, is_followup, parent_id
      FROM runs
      ORDER BY id DESC
-     LIMIT ?`
+     LIMIT ?`,
+    [limit]
   );
-  return stmt.all(limit);
 }
 
-export function getRun(id: number) {
-  const database = ensureDb();
-  const stmt = database.prepare(`SELECT * FROM runs WHERE id = ?`);
-  const row = stmt.get(id) as RunRow | undefined;
+export async function getRun(id: number) {
+  const database = await ensureDb();
+  const rows = queryRows(database, `SELECT * FROM runs WHERE id = ?`, [id]);
+  const row = rows[0] as RunRow | undefined;
   if (!row) return null;
   return {
     id: row.id,
@@ -98,9 +163,12 @@ export function getRun(id: number) {
   };
 }
 
-export function renameRun(id: number, name: string) {
-  const database = ensureDb();
+export async function renameRun(id: number, name: string) {
+  const database = await ensureDb();
   const stmt = database.prepare(`UPDATE runs SET name = ? WHERE id = ?`);
-  const info = stmt.run(name, id);
-  return info.changes > 0;
+  stmt.run([name, id]);
+  stmt.free();
+  const changes = database.getRowsModified();
+  await persistDb(database);
+  return changes > 0;
 }

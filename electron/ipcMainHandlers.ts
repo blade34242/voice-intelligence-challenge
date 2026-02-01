@@ -102,7 +102,7 @@ export function registerIpcHandlers(params: {
     try {
       sendToRenderer("app.state", { state: "enriching" });
       const { result, mode } = await enrichTranscript(payload);
-      const runId = saveRun({
+      const runId = await saveRun({
         name: deriveRunName(result),
         createdAt: new Date().toISOString(),
         mode,
@@ -133,7 +133,7 @@ export function registerIpcHandlers(params: {
           mode: payload.mode,
           previous: payload.previous
         });
-        const runId = saveRun({
+        const runId = await saveRun({
           name: deriveRunName(result),
           createdAt: new Date().toISOString(),
           mode,
@@ -205,20 +205,20 @@ export function registerIpcHandlers(params: {
     return listModes();
   });
 
-  ipcMain.handle("history.list", (_event, payload?: { limit?: number }) => {
-    return listRuns(payload?.limit ?? 50);
+  ipcMain.handle("history.list", async (_event, payload?: { limit?: number }) => {
+    return await listRuns(payload?.limit ?? 50);
   });
 
-  ipcMain.handle("history.get", (_event, payload: { id: number }) => {
-    return getRun(payload.id);
+  ipcMain.handle("history.get", async (_event, payload: { id: number }) => {
+    return await getRun(payload.id);
   });
 
-  ipcMain.handle("history.rename", (_event, payload: { id: number; name: string }) => {
+  ipcMain.handle("history.rename", async (_event, payload: { id: number; name: string }) => {
     const name = (payload.name ?? "").trim();
     if (!name) {
       throw new Error("Name cannot be empty.");
     }
-    return renameRun(payload.id, name);
+    return await renameRun(payload.id, name);
   });
 }
 

@@ -4,14 +4,10 @@
 - Hotkeys unter **Ubuntu/Wayland** oft blockiert → X11 nutzen
 - Lange Aufnahmen sammeln Audio im RAM (kann groß werden)
 - API‑Timeouts sind minimal (MVP)
-- **SQLite (better-sqlite3)** benötigt Build‑Tools (z. B. `build-essential`, `python3`) auf Linux.
+- **SQLite (sql.js / WASM)** benötigt keine Build‑Tools (kein native Compile).
 
-## Electron + better‑sqlite3: NODE_MODULE_VERSION mismatch
-Wenn Electron meldet, dass `better-sqlite3` gegen eine andere Node‑Version kompiliert wurde, bitte neu bauen:
-
-```bash
-npm run rebuild:electron
-```
+## SQLite (sql.js): keine Native‑Builds nötig
+Wenn du zuvor `better-sqlite3` verwendet hast, entferne alte `node_modules` + Lockfile und installiere neu.
 
 ## Realtime Transcription not supported / Verbindung wird geschlossen
 Fehler wie „Model *…* is not supported in realtime mode“ oder „Realtime transcription closed“ bedeuten
