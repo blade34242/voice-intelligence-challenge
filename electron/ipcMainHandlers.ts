@@ -4,7 +4,7 @@ import path from "path";
 import { SttClient } from "./sttClient";
 import { checkRealtimeAccess } from "./realtimeSttClient";
 import { enrichTranscript, updateWithFollowUp } from "./enrichLlm";
-import { getSettingsSafe, setSettings } from "./settings";
+import { getSettingsSafe, normalizeHotkey, setSettings } from "./settings";
 import { Mode } from "../src/lib/schemas";
 import { sendWebhook, WebhookPayload } from "./n8nWebhook";
 import { getRun, listRuns, renameRun, saveRun } from "./historyDb";
@@ -39,7 +39,7 @@ export function registerIpcHandlers(params: {
 
   ipcMain.handle("settings.set", (_event, payload) => {
     if (payload?.hotkey !== undefined) {
-      const nextHotkey = String(payload.hotkey).trim();
+      const nextHotkey = normalizeHotkey(String(payload.hotkey).trim());
       if (!nextHotkey) {
         throw new Error("Hotkey cannot be empty.");
       }

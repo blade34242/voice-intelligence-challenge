@@ -45,7 +45,7 @@ export function getApiKey(): string | undefined {
 }
 
 export function getSettingsSafe() {
-  const hotkey = getStore().get("hotkey", DEFAULT_HOTKEY);
+  const hotkey = normalizeHotkey(getStore().get("hotkey", DEFAULT_HOTKEY));
   return {
     hotkey,
     apiKeyPresent: Boolean(getStore().get("apiKey")),
@@ -90,12 +90,12 @@ export function setSettings(input: {
     getStore().set("sttTransport", input.sttTransport.trim());
   }
   if (input.hotkey !== undefined) {
-    getStore().set("hotkey", input.hotkey.trim());
+    getStore().set("hotkey", normalizeHotkey(input.hotkey.trim()));
   }
 }
 
 export function getHotkey(): string {
-  return getStore().get("hotkey", DEFAULT_HOTKEY);
+  return normalizeHotkey(getStore().get("hotkey", DEFAULT_HOTKEY));
 }
 
 export function getN8nConfig() {
@@ -115,4 +115,8 @@ export function getSttModel(): string {
 
 export function getSttTransport(): string {
   return getStore().get("sttTransport", "batch");
+}
+
+export function normalizeHotkey(value: string) {
+  return value.replace(/SPACE/gi, "Space");
 }
