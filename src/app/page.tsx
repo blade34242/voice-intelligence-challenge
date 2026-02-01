@@ -559,6 +559,10 @@ export default function Home() {
 
   const timerDisplay = appState === "recording" ? formatTimer(elapsed) : undefined;
   const transportLabel = activeTransport === "realtime" ? "Realtime" : "Batch";
+  const languageLabel = formatLanguageLabel(settings?.sttLanguage);
+  const quickModeLabel = resolvedMode
+    ? `Auto (${modeOptions.find((m) => m.id === resolvedMode)?.label ?? resolvedMode})`
+    : "Auto (LLM decides)";
 
   return (
     <main className="app">
@@ -569,11 +573,7 @@ export default function Home() {
         transportLabel={transportLabel}
         transportTone={activeTransport === "realtime" ? "realtime" : "batch"}
         allowModeChange={false}
-        modeDisplay={
-          resolvedMode
-            ? `Auto (${modeOptions.find((m) => m.id === resolvedMode)?.label ?? resolvedMode})`
-            : "Auto (LLM decides)"
-        }
+        modeDisplay={quickModeLabel}
         modeControl={
           appState === "done" && result ? (
             <>
@@ -696,6 +696,8 @@ export default function Home() {
                 error={error}
                 notice={notice}
                 hotkey={settings?.hotkey}
+                modeLabel={quickModeLabel}
+                languageLabel={languageLabel}
               />
             )}
           </section>
@@ -775,6 +777,11 @@ function deriveRunName(result: LlmResult) {
   if (data?.name) return String(data.name);
   if (result.summary) return result.summary.slice(0, 60);
   return "Untitled Run";
+}
+
+function formatLanguageLabel(language?: string) {
+  if (!language || language === "auto") return "Auto";
+  return language.toUpperCase();
 }
 
 async function startAudioCapture(onFrame: (frame: ArrayBuffer) => void) {

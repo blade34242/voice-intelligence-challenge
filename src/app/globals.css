@@ -500,6 +500,22 @@ body {
   font-size: 11px;
 }
 
+.quick-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.14);
+  color: #0b6b85;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .recorder-meta {
   display: flex;
   justify-content: flex-end;
@@ -838,6 +854,10 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.95);
   color: var(--ink);
   font-family: inherit;
+}
+
+.modal input[readonly] {
+  background: rgba(235, 245, 255, 0.95);
 }
 
 .settings-row {

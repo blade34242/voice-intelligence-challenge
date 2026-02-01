@@ -13,6 +13,8 @@ export function RecorderPanel(props: {
   error?: string | null;
   notice?: string | null;
   hotkey?: string;
+  modeLabel?: string;
+  languageLabel?: string;
 }) {
   const isRecording = props.state === "recording";
   const canStart = props.state === "idle" || props.state === "error" || props.state === "done";
@@ -20,6 +22,8 @@ export function RecorderPanel(props: {
   const showReset = props.state === "error";
   const showQuickStart = props.state === "idle" || props.state === "error";
   const hotkeyLabel = props.hotkey?.trim() || "Ctrl+Shift+Space";
+  const modeLabel = props.modeLabel ?? "Auto (LLM decides)";
+  const languageLabel = props.languageLabel ?? "Auto";
 
   return (
     <div className="recorder-panel">
@@ -58,6 +62,10 @@ export function RecorderPanel(props: {
               <span className="quick-dot">4</span>
               <span>Copy or export the result</span>
             </div>
+          </div>
+          <div className="quick-meta">
+            <span className="quick-pill">Mode: {modeLabel}</span>
+            <span className="quick-pill">Language: {languageLabel}</span>
           </div>
         </div>
       ) : null}
