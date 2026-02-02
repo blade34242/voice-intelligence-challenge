@@ -1,10 +1,10 @@
-# Everlast Voice Intelligence (Desktop App)
+# Voice Intelligence (Desktop App)
 
 **One‑liner:**  
-Sprache ist schnell, aber Transkripte sind Chaos. Everlast wandelt gesprochene Ideen in **sofort nutzbare, strukturierte Objekte** – ohne Nacharbeit.
+Sprache ist schnell, aber Transkripte sind Chaos. Die App wandelt gesprochene Ideen in **sofort nutzbare, strukturierte Objekte** – ohne Nacharbeit.
 
 **Kurzbeschreibung (vollständig):**  
-Everlast Voice Intelligence ist ein Desktop‑Tool, das Sprache aufnimmt, **transkribiert** und die Inhalte **strukturiert aufbereitet**. Du kannst Ergebnisse **direkt bearbeiten**, als **Follow‑Up** mit neuen Transkripten **aktualisieren** (inkl. **Diff/Change‑Log**), und anschließend per **Webhook** oder Export weiterverarbeiten. Ziel: weniger Nacharbeit und sofort nutzbare, strukturierte Daten aus Sprache.
+Voice Intelligence ist ein Desktop‑Tool, das Sprache aufnimmt, **transkribiert** und die Inhalte **strukturiert aufbereitet**. Du kannst Ergebnisse **direkt bearbeiten**, als **Follow‑Up** mit neuen Transkripten **aktualisieren** (inkl. **Diff/Change‑Log**), und anschließend per **Webhook** oder Export weiterverarbeiten. Ziel: weniger Nacharbeit und sofort nutzbare, strukturierte Daten aus Sprache.
 
 ## Kurzbeschreibung des Problems
 Voice‑Notizen sind schnell, aber rohe Transkripte sind unstrukturiert und schwer weiterzuverarbeiten. Für Kalender‑Events, E‑Mails, Tickets oder Notizen braucht es meist manuelle Nacharbeit und Tool‑Wechsel.
