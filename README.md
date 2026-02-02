@@ -147,6 +147,9 @@ Mehrere STT‑Modelle ermöglichen **Speed vs. Accuracy** je nach Gerät und Auf
 - `gpt-4o-transcribe` → höhere Genauigkeit (Batch + Realtime)
 - `whisper-1` → Legacy/Fallback (nur Batch)
 
+**Default:** `Batch` + `gpt-4o-transcribe` liefert in der Praxis die stabilsten und besten Ergebnisse –  
+ohne den Provider zu wechseln.
+
 ---
 
 ## Configurable Modes (JS/TS + Zod)

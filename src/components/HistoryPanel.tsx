@@ -122,7 +122,6 @@ export function HistoryPanel(props: {
                     />
                   ) : (
                     <div className="history-name">
-                      <span>{item.name}</span>
                       {typeof item.coverage === "number" ? (
                         <span className={`coverage-badge ${coverageTone(item.coverage)}`}>
                           {item.coverage}%
@@ -130,6 +129,7 @@ export function HistoryPanel(props: {
                       ) : (
                         <span className="coverage-badge unknown">—</span>
                       )}
+                      <span>{item.name}</span>
                     </div>
                   )}
                   <div className="history-sub">
