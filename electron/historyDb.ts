@@ -13,6 +13,7 @@ type RunRow = {
   change_log_json: string | null;
   is_followup: number;
   parent_id: number | null;
+  coverage: number | null;
 };
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
@@ -72,10 +73,21 @@ async function ensureDb() {
       result_json TEXT NOT NULL,
       change_log_json TEXT,
       is_followup INTEGER NOT NULL DEFAULT 0,
-      parent_id INTEGER
+      parent_id INTEGER,
+      coverage REAL
     );
   `);
+  ensureCoverageColumn(db);
   return db;
+}
+
+function ensureCoverageColumn(database: Database) {
+  const info = database.exec("PRAGMA table_info(runs)");
+  const rows = info?.[0]?.values ?? [];
+  const hasCoverage = rows.some((row) => row?.[1] === "coverage");
+  if (!hasCoverage) {
+    database.exec("ALTER TABLE runs ADD COLUMN coverage REAL");
+  }
 }
 
 async function persistDb(database: Database) {
@@ -114,11 +126,12 @@ export async function saveRun(params: {
   changeLog?: unknown[];
   isFollowUp?: boolean;
   parentId?: number | null;
+  coverage?: number | null;
 }) {
   const database = await ensureDb();
   const stmt = database.prepare(
-    `INSERT INTO runs (name, created_at, mode, transcript, result_json, change_log_json, is_followup, parent_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO runs (name, created_at, mode, transcript, result_json, change_log_json, is_followup, parent_id, coverage)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   stmt.run([
     params.name,
@@ -128,7 +141,8 @@ export async function saveRun(params: {
     JSON.stringify(params.result),
     JSON.stringify(params.changeLog ?? []),
     params.isFollowUp ? 1 : 0,
-    params.parentId ?? null
+    params.parentId ?? null,
+    params.coverage ?? null
   ]);
   stmt.free();
   const rows = database.exec("SELECT last_insert_rowid() AS id");
@@ -141,12 +155,28 @@ export async function listRuns(limit = 50) {
   const database = await ensureDb();
   return queryRows(
     database,
-    `SELECT id, name, created_at, mode, is_followup, parent_id
+    `SELECT id, name, created_at, mode, is_followup, parent_id, coverage
      FROM runs
      ORDER BY id DESC
      LIMIT ?`,
     [limit]
   );
+}
+
+export async function listRunsWithResults(limit = 50) {
+  const database = await ensureDb();
+  const rows = queryRows(
+    database,
+    `SELECT id, name, created_at, mode, is_followup, parent_id, coverage, result_json
+     FROM runs
+     ORDER BY id DESC
+     LIMIT ?`,
+    [limit]
+  );
+  return rows.map((row) => ({
+    ...row,
+    result: row["result_json"] ? JSON.parse(String(row["result_json"])) : null
+  }));
 }
 
 export async function getRun(id: number) {
@@ -163,8 +193,17 @@ export async function getRun(id: number) {
     result: JSON.parse(row.result_json),
     changeLog: row.change_log_json ? JSON.parse(row.change_log_json) : [],
     is_followup: row.is_followup,
-    parent_id: row.parent_id
+    parent_id: row.parent_id,
+    coverage: row.coverage ?? null
   };
+}
+
+export async function setRunCoverage(id: number, coverage: number) {
+  const database = await ensureDb();
+  const stmt = database.prepare(`UPDATE runs SET coverage = ? WHERE id = ?`);
+  stmt.run([coverage, id]);
+  stmt.free();
+  await persistDb(database);
 }
 
 export async function renameRun(id: number, name: string) {

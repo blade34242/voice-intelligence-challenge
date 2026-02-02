@@ -6,8 +6,12 @@ export const mode: ModeDefinition = {
   label: "Ticket",
   description: "Issue/bug ticket with impact, environment, and clear steps.",
   route: "ticket",
-  system: "You fill the JSON schema exactly. Do not add extra keys.",
-  userHint: "Create a clear issue ticket. Use empty arrays if steps are unknown.",
+  system:
+    "Be concrete and concise. Do not invent steps or environment. " +
+    "If unknown, use empty string for required strings and empty arrays for steps.",
+  userHint:
+    "Create a clear issue ticket. Title short; steps as bullet sentences. " +
+    "Unknown: empty string for text fields, empty array for steps; severity must be low/medium/high.",
   dataSchemaJson: {
     type: "object",
     additionalProperties: false,

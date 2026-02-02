@@ -1,5 +1,8 @@
 # Everlast Voice Intelligence (Desktop App)
 
+**One‑liner:**  
+Sprache ist schnell, aber Transkripte sind Chaos. Everlast wandelt gesprochene Ideen in **sofort nutzbare, strukturierte Objekte** – ohne Nacharbeit.
+
 **Kurzbeschreibung (vollständig):**  
 Everlast Voice Intelligence ist ein Desktop‑Tool, das Sprache aufnimmt, **transkribiert** und die Inhalte **strukturiert aufbereitet**. Du kannst Ergebnisse **direkt bearbeiten**, als **Follow‑Up** mit neuen Transkripten **aktualisieren** (inkl. **Diff/Change‑Log**), und anschließend per **Webhook** oder Export weiterverarbeiten. Ziel: weniger Nacharbeit und sofort nutzbare, strukturierte Daten aus Sprache.
 
@@ -43,6 +46,10 @@ Ablauf: **Hotkey → Aufnahme → Transkription → Enrichment → Ergebnis (eve
 6. UI zeigt Summary/Details/Actions + Export/Webhook
 7. Run wird in SQLite (WASM) gespeichert (inkl. Follow‑Up & Change‑Log)
 
+## Audio‑Qualität (Details)
+Die Audio‑Pipeline (24 kHz / 16‑bit / mono) ist dokumentiert in:
+- `docs/audio-quality.md`
+
 ---
 
 ## Setup
@@ -66,6 +73,15 @@ npm run dev
 npm run build
 npm run pack
 ```
+
+### Releases (fertige Builds)
+Wenn du einen **Git Tag** (z. B. `v0.1.5`) pushst, baut GitHub Actions automatisch:
+- **Windows** → `.exe` (und ggf. `.zip`/`.yml`)
+- **Linux** → `.AppImage`
+
+Die fertigen Dateien findest du:
+- **GitHub Release** (Assets der Version)
+- **Actions → Artifacts** (falls du nur Artifacts möchtest)
 
 ### Self‑Build (Linux / Windows)
 Wenn du die App selbst bauen willst, beachte die OS‑Unterschiede:

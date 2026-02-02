@@ -167,6 +167,40 @@ body {
   color: #3a566c;
 }
 
+.coverage-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.2px;
+}
+
+.coverage-badge.low {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #991b1b;
+}
+
+.coverage-badge.mid {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #92400e;
+}
+
+.coverage-badge.high {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #14532d;
+}
+
+.coverage-badge.unknown {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #3a566c;
+}
+
 .inline-editor {
   width: 100%;
   min-height: 140px;
@@ -343,6 +377,9 @@ body {
 
 .history-name {
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .history-rename {

@@ -18,6 +18,7 @@ export function OverlayShell(props: {
   timer?: string;
   transportLabel?: string;
   transportTone?: "realtime" | "batch";
+  coverage?: number | null;
   onModeChange?: (mode: Mode) => void;
   allowModeChange?: boolean;
   modeDisplay?: string;
@@ -27,6 +28,14 @@ export function OverlayShell(props: {
   children: ReactNode;
 }) {
   const allowModeChange = props.allowModeChange ?? true;
+  const coverageTone =
+    props.coverage === null || props.coverage === undefined
+      ? "unknown"
+      : props.coverage < 50
+        ? "low"
+        : props.coverage < 80
+          ? "mid"
+          : "high";
   return (
     <div className="overlay-shell">
       <div className="drag-bar" aria-hidden="true" />
@@ -69,6 +78,9 @@ export function OverlayShell(props: {
           <span className={`transport-badge ${props.transportTone ?? "batch"}`}>
             {props.transportLabel}
           </span>
+        ) : null}
+        {typeof props.coverage === "number" ? (
+          <span className={`coverage-badge ${coverageTone}`}>Schema {props.coverage}%</span>
         ) : null}
       </div>
 

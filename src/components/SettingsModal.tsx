@@ -24,6 +24,7 @@ export function SettingsModal(props: {
   const [sttLanguage, setSttLanguage] = useState("auto");
   const [sttModel, setSttModel] = useState("gpt-4o-transcribe");
   const [sttTransport, setSttTransport] = useState("batch");
+  const [resetHint, setResetHint] = useState("");
   const [realtimeCheck, setRealtimeCheck] = useState<{ status: "idle" | "checking" | "ok" | "error"; message: string }>({
     status: "idle",
     message: ""
@@ -41,6 +42,7 @@ export function SettingsModal(props: {
       setHotkeyTouched(false);
       setN8nSharedSecret("");
       setN8nSecretTouched(false);
+      setResetHint("");
       setRealtimeCheck({ status: "idle", message: "" });
     }
   }, [props.settings]);
@@ -197,10 +199,43 @@ export function SettingsModal(props: {
           >
             Save
           </button>
+          <button
+            className="secondary"
+            onClick={async () => {
+              if (!ipcClient.isAvailable()) {
+                setResetHint("Electron IPC unavailable.");
+                return;
+              }
+              try {
+                const data = await ipcClient.invoke("settings.reset");
+                setApiKey("");
+                setApiKeyTouched(false);
+                setN8nWebhookUrl(data?.n8nWebhookUrl ?? "");
+                setN8nSharedSecret("");
+                setN8nSecretTouched(false);
+                setSttLanguage(data?.sttLanguage ?? "auto");
+                setSttModel(data?.sttModel ?? "gpt-4o-transcribe");
+                setSttTransport(data?.sttTransport ?? "batch");
+                setHotkey(data?.hotkey ?? "");
+                setHotkeyTouched(false);
+                setRealtimeCheck({ status: "idle", message: "" });
+                if (data?.hotkeyError) {
+                  setResetHint(data.hotkeyError);
+                } else {
+                  setResetHint("Settings reset to defaults.");
+                }
+              } catch (err: any) {
+                setResetHint(err?.message ?? "Reset failed.");
+              }
+            }}
+          >
+            Reset
+          </button>
           <button className="secondary" onClick={props.onClose}>
             Close
           </button>
         </div>
+        {resetHint ? <span className="settings-hint">{resetHint}</span> : null}
       </div>
     </div>
   );

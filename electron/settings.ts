@@ -94,6 +94,17 @@ export function setSettings(input: {
   }
 }
 
+export function resetSettings() {
+  const store = getStore();
+  store.clear();
+  store.set("hotkey", DEFAULT_HOTKEY);
+  store.set("sttLanguage", "auto");
+  store.set("sttModel", "gpt-4o-transcribe");
+  store.set("sttTransport", "batch");
+  store.set("n8nWebhookUrl", "");
+  store.set("n8nSharedSecret", "");
+}
+
 export function getHotkey(): string {
   return getStore().get("hotkey", DEFAULT_HOTKEY);
 }

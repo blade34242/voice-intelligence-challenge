@@ -6,9 +6,12 @@ export const mode: ModeDefinition = {
   label: "Email",
   description: "Email draft with subject, body, recipients, and intent.",
   route: "email",
-  system: "You fill the JSON schema exactly. Do not add extra keys.",
+  system:
+    "Be concrete and concise. Do not invent recipients. " +
+    "If unknown, use empty string for required strings and empty arrays for recipients.",
   userHint:
-    "Draft a clear email. Use empty arrays for unknown recipients. Include intent and tone.",
+    "Draft a clear email. Subject short; body 4-8 sentences. " +
+    "Unknown: empty arrays for to/cc/bcc, empty string for subject/body/intent/tone.",
   dataSchemaJson: {
     type: "object",
     additionalProperties: false,

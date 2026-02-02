@@ -49,6 +49,13 @@ export function HistoryPanel(props: {
     cancelEditing();
   };
 
+  const coverageTone = (value?: number | null) => {
+    if (value === null || value === undefined) return "unknown";
+    if (value < 50) return "low";
+    if (value < 80) return "mid";
+    return "high";
+  };
+
   return (
     <div className="history-panel">
       {showCurrent ? (
@@ -114,7 +121,16 @@ export function HistoryPanel(props: {
                       autoFocus
                     />
                   ) : (
-                    <div className="history-name">{item.name}</div>
+                    <div className="history-name">
+                      <span>{item.name}</span>
+                      {typeof item.coverage === "number" ? (
+                        <span className={`coverage-badge ${coverageTone(item.coverage)}`}>
+                          {item.coverage}%
+                        </span>
+                      ) : (
+                        <span className="coverage-badge unknown">—</span>
+                      )}
+                    </div>
                   )}
                   <div className="history-sub">
                     <span>#{item.id}</span>

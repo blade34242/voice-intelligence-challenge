@@ -6,9 +6,12 @@ export const mode: ModeDefinition = {
   label: "Event",
   description: "Calendar event details with date/time, location, attendees, and reminders.",
   route: "calendar",
-  system: "You fill the JSON schema exactly. Do not add extra keys.",
+  system:
+    "Be concrete and concise. Do not invent details. Use ISO date/time formats when possible. " +
+    "If unknown, use null where allowed, otherwise empty string; use empty arrays for unknown lists.",
   userHint:
-    "Extract a calendar event. Use null for unknown date/time/timezone/location/duration. Use empty arrays if unknown.",
+    "Extract a calendar event. Use YYYY-MM-DD, HH:MM, and IANA timezone when known. " +
+    "Unknown: null for date/time/timezone/location/duration, empty arrays for attendees/reminders, empty string for title/description.",
   dataSchemaJson: {
     type: "object",
     additionalProperties: false,

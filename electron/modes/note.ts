@@ -6,9 +6,12 @@ export const mode: ModeDefinition = {
   label: "Note",
   description: "Structured notes with summary, bullets, and action items.",
   route: "notes",
-  system: "You fill the JSON schema exactly. Do not add extra keys.",
+  system:
+    "Be concrete and concise. Do not invent details. " +
+    "If unknown, use empty string for required strings and empty arrays for lists.",
   userHint:
-    "Create a clear summary plus bullets. Use empty arrays if there are no actions/decisions/questions.",
+    "Create a clear summary plus bullets (3-7). Actions should be imperative. " +
+    "Unknown: empty arrays for actions/decisions/questions, empty string for title/summary.",
   dataSchemaJson: {
     type: "object",
     additionalProperties: false,

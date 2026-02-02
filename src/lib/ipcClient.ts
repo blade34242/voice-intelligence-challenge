@@ -17,6 +17,7 @@ export type HistoryItem = {
   mode: Mode;
   is_followup: number;
   parent_id: number | null;
+  coverage?: number | null;
 };
 
 export type HistoryRun = HistoryItem & {
@@ -50,6 +51,7 @@ export type SettingsSafe = {
   sttLanguage: string;
   sttModel: string;
   sttTransport: string;
+  hotkeyError?: string | null;
 };
 
 export type IpcEventMap = {
@@ -58,8 +60,8 @@ export type IpcEventMap = {
   "stt.live": { liveText: string };
   "stt.final": { finalTranscript: string };
   "stt.error": { message: string };
-  "llm.result": { json: LlmResult; mode: Mode; runId: number };
-  "llm.updated": { json: LlmResult; mode: Mode; changeLog: ChangeLogEntry[]; runId: number };
+  "llm.result": { json: LlmResult; mode: Mode; runId: number; coverage?: number | null };
+  "llm.updated": { json: LlmResult; mode: Mode; changeLog: ChangeLogEntry[]; runId: number; coverage?: number | null };
   "llm.error": { message: string };
   "settings.open": {};
   "record.start": {};
@@ -79,6 +81,7 @@ export type IpcInvokeMap = {
     sttTransport?: string;
     hotkey?: string;
   };
+  "settings.reset": undefined;
   "settings.open": undefined;
   "stt.start": undefined;
   "stt.audioFrame": { pcm16Buffer: ArrayBuffer };

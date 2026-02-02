@@ -42,6 +42,7 @@ export default function Home() {
   const [followUpBase, setFollowUpBase] = useState<LlmResult | null>(null);
   const [followUpMode, setFollowUpMode] = useState<Mode | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [coverage, setCoverage] = useState<number | null>(null);
   const [currentRunId, setCurrentRunId] = useState<number | null>(null);
   const [currentRunName, setCurrentRunName] = useState("Untitled Run");
   const [currentRunNameSaved, setCurrentRunNameSaved] = useState("Untitled Run");
@@ -190,12 +191,13 @@ export default function Home() {
         setFollowUpBase(null);
         setFollowUpMode(null);
       }),
-      ipcClient.on("llm.result", ({ json, mode: chosenMode, runId }) => {
+      ipcClient.on("llm.result", ({ json, mode: chosenMode, runId, coverage }) => {
         setResult(json);
         setResolvedMode(chosenMode);
         setOverrideMode(null);
         setChangeLog([]);
         setCurrentRunId(runId ?? null);
+        setCoverage(coverage ?? null);
         const name = deriveRunName(json);
         setCurrentRunName(name);
         setCurrentRunNameSaved(name);
@@ -203,12 +205,13 @@ export default function Home() {
         void refreshHistory();
         setAppState("done");
       }),
-      ipcClient.on("llm.updated", ({ json, mode: chosenMode, changeLog, runId }) => {
+      ipcClient.on("llm.updated", ({ json, mode: chosenMode, changeLog, runId, coverage }) => {
         setResult(json);
         setResolvedMode(chosenMode);
         setOverrideMode(null);
         setChangeLog(changeLog ?? []);
         setCurrentRunId(runId ?? null);
+        setCoverage(coverage ?? null);
         const name = deriveRunName(json);
         setCurrentRunName(name);
         setCurrentRunNameSaved(name);
@@ -266,6 +269,7 @@ export default function Home() {
     setError(null);
     setNotice(null);
     setResult(null);
+    setCoverage(null);
     setLiveTranscript("");
     setFinalTranscript("");
     setResolvedMode(null);
@@ -461,6 +465,7 @@ export default function Home() {
       setOverrideMode(null);
       setChangeLog(run.changeLog ?? []);
       setCurrentRunId(run.id);
+      setCoverage(run.coverage ?? null);
       const name = run.name ?? "Untitled Run";
       setCurrentRunName(name);
       setCurrentRunNameSaved(name);
@@ -529,6 +534,7 @@ export default function Home() {
     setError(null);
     setNotice(null);
     setResult(null);
+    setCoverage(null);
     setLiveTranscript("");
     setFinalTranscript("");
     setEditableTranscript("");
@@ -538,6 +544,7 @@ export default function Home() {
     setFollowUpBase(null);
     setFollowUpMode(null);
     setCurrentRunId(null);
+    setCoverage(null);
     setCurrentRunName("Untitled Run");
     setCurrentRunNameSaved("Untitled Run");
     setCurrentRunNameDirty(false);
@@ -572,6 +579,7 @@ export default function Home() {
         timer={timerDisplay}
         transportLabel={transportLabel}
         transportTone={activeTransport === "realtime" ? "realtime" : "batch"}
+        coverage={coverage}
         allowModeChange={false}
         modeDisplay={quickModeLabel}
         modeControl={

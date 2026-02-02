@@ -4,11 +4,12 @@ import path from "path";
 import { SttClient } from "./sttClient";
 import { checkRealtimeAccess } from "./realtimeSttClient";
 import { enrichTranscript, updateWithFollowUp } from "./enrichLlm";
-import { getSettingsSafe, setSettings } from "./settings";
+import { DEFAULT_HOTKEY, getSettingsSafe, resetSettings, setSettings } from "./settings";
 import { Mode } from "../src/lib/schemas";
 import { sendWebhook, WebhookPayload } from "./n8nWebhook";
-import { getRun, listRuns, renameRun, saveRun } from "./historyDb";
+import { getRun, listRunsWithResults, renameRun, saveRun, setRunCoverage } from "./historyDb";
 import { listModes, getModeById } from "./modes";
+import { computeCoverage } from "./schemaCoverage";
 
 export function registerIpcHandlers(params: {
   getMainWindow: () => BrowserWindow | null;
@@ -49,6 +50,15 @@ export function registerIpcHandlers(params: {
     }
     setSettings(payload);
     return getSettingsSafe();
+  });
+
+  ipcMain.handle("settings.reset", () => {
+    let hotkeyError: string | null = null;
+    if (onHotkeyChange && !onHotkeyChange(DEFAULT_HOTKEY)) {
+      hotkeyError = "Hotkey could not be registered. It may be in use by the system.";
+    }
+    resetSettings();
+    return { ...getSettingsSafe(), hotkeyError };
   });
 
   ipcMain.handle("settings.open", () => {
@@ -102,6 +112,8 @@ export function registerIpcHandlers(params: {
     try {
       sendToRenderer("app.state", { state: "enriching" });
       const { result, mode } = await enrichTranscript(payload);
+      const modeDef = getModeById(mode);
+      const coverage = modeDef ? computeCoverage(modeDef, result).percent : null;
       const runId = await saveRun({
         name: deriveRunName(result),
         createdAt: new Date().toISOString(),
@@ -109,12 +121,13 @@ export function registerIpcHandlers(params: {
         transcript: payload.transcript,
         result,
         changeLog: [],
-        isFollowUp: false
+        isFollowUp: false,
+        coverage
       });
       sendToRenderer("app.state", { state: "done" });
-      sendToRenderer("llm.result", { json: result, mode, runId });
+      sendToRenderer("llm.result", { json: result, mode, runId, coverage });
       void dispatchWebhook(payload.transcript, result, mode);
-      return { result, mode, runId };
+      return { result, mode, runId, coverage };
     } catch (err: any) {
       const message = err?.message ?? "Enrichment failed.";
       sendToRenderer("llm.error", { message });
@@ -133,6 +146,8 @@ export function registerIpcHandlers(params: {
           mode: payload.mode,
           previous: payload.previous
         });
+        const modeDef = getModeById(mode);
+        const coverage = modeDef ? computeCoverage(modeDef, result).percent : null;
         const runId = await saveRun({
           name: deriveRunName(result),
           createdAt: new Date().toISOString(),
@@ -141,12 +156,13 @@ export function registerIpcHandlers(params: {
           result,
           changeLog,
           isFollowUp: true,
-          parentId: payload.previousId ?? null
+          parentId: payload.previousId ?? null,
+          coverage
         });
         sendToRenderer("app.state", { state: "done" });
-        sendToRenderer("llm.updated", { json: result, mode, changeLog, runId });
+        sendToRenderer("llm.updated", { json: result, mode, changeLog, runId, coverage });
         void dispatchWebhook(payload.transcript, result, mode);
-        return { result, mode, changeLog, runId };
+        return { result, mode, changeLog, runId, coverage };
       } catch (err: any) {
         const message = err?.message ?? "Update failed.";
         sendToRenderer("llm.error", { message });
@@ -206,11 +222,41 @@ export function registerIpcHandlers(params: {
   });
 
   ipcMain.handle("history.list", async (_event, payload?: { limit?: number }) => {
-    return await listRuns(payload?.limit ?? 50);
+    const rows = await listRunsWithResults(payload?.limit ?? 50);
+    const items = rows.map((row) => {
+      let coverage = typeof row.coverage === "number" ? row.coverage : null;
+      if (coverage === null && row.result) {
+        const modeDef = getModeById(String(row.mode));
+        if (modeDef) {
+          coverage = computeCoverage(modeDef, row.result).percent;
+          void setRunCoverage(Number(row.id), coverage);
+        }
+      }
+      return {
+        id: Number(row.id),
+        name: String(row.name),
+        created_at: String(row.created_at),
+        mode: String(row.mode),
+        is_followup: Number(row.is_followup),
+        parent_id: row.parent_id === null ? null : Number(row.parent_id),
+        coverage
+      };
+    });
+    return items;
   });
 
   ipcMain.handle("history.get", async (_event, payload: { id: number }) => {
-    return await getRun(payload.id);
+    const run = await getRun(payload.id);
+    if (!run) return null;
+    let coverage = typeof run.coverage === "number" ? run.coverage : null;
+    if (coverage === null) {
+      const modeDef = getModeById(String(run.mode));
+      if (modeDef) {
+        coverage = computeCoverage(modeDef, run.result).percent;
+        await setRunCoverage(run.id, coverage);
+      }
+    }
+    return { ...run, coverage };
   });
 
   ipcMain.handle("history.rename", async (_event, payload: { id: number; name: string }) => {
