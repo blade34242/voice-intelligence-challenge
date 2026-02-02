@@ -135,6 +135,8 @@ Wir haben den Plan gezielt erweitert, um **Stabilität**, **Nutzbarkeit** und **
 - **Webhook‑Export + Payload‑Doku:** spätere Automationen (n8n) einfacher.
 - **Inline‑Transcript‑Edit + Re‑Run:** Korrekturen ohne Neuaufnahme.
 - **Follow‑Up Updates mit Change‑Log:** Folge‑Transkripte aktualisieren vorhandene Daten und zeigen Änderungen.
+- **Follow‑Up Preview + Step‑Flow:** Updates werden vor dem Speichern sichtbar gemacht (Review/Apply).  
+  Das reduziert Fehl‑Updates und macht den Prozess transparent – gerade wichtig in Demos und produktiven Workflows.
 - **SQLite‑Verlauf mit Namen:** Runs können benannt und geladen werden.
 - **better‑sqlite3 → sql.js (WASM):** native Builds verursachen Windows‑Build‑Hürden (Visual Studio, ABI‑Mismatches).  
   Für Contest‑Portabilität setzen wir auf **WASM‑SQLite**, damit Builds auf Linux/Windows **ohne Compiler** laufen.

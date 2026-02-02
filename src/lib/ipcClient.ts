@@ -61,6 +61,7 @@ export type IpcEventMap = {
   "stt.final": { finalTranscript: string };
   "stt.error": { message: string };
   "llm.result": { json: LlmResult; mode: Mode; runId: number; coverage?: number | null };
+  "llm.updatePreview": { json: LlmResult; mode: Mode; changeLog: ChangeLogEntry[]; token: string };
   "llm.updated": { json: LlmResult; mode: Mode; changeLog: ChangeLogEntry[]; runId: number; coverage?: number | null };
   "llm.error": { message: string };
   "settings.open": {};
@@ -89,6 +90,8 @@ export type IpcInvokeMap = {
   "stt.realtimeCheck": undefined;
   "llm.enrich": { transcript: string; mode: Mode };
   "llm.update": { transcript: string; mode: Mode; previous: LlmResult; previousId?: number };
+  "llm.applyUpdate": { token: string };
+  "llm.discardUpdate": { token: string };
   "clipboard.copy": { text: string };
   "export.json": { data: unknown; suggestedName: string };
   "export.md": { markdown: string; suggestedName: string };

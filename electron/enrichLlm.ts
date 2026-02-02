@@ -78,10 +78,11 @@ export async function updateWithFollowUp(params: {
   const response = await callOpenAI(apiKey, system, user, schema);
   const parsed = parseAndValidateUpdate(response, validator);
   if (parsed.ok) {
+    const changeLog = buildChangeLog(params.previous, parsed.value.result as RunOutput);
     return {
       result: parsed.value.result as RunOutput,
       mode: mode.id,
-      changeLog: parsed.value.change_log as ChangeLogEntry[]
+      changeLog
     };
   }
 
@@ -93,10 +94,11 @@ export async function updateWithFollowUp(params: {
   );
   const retryParsed = parseAndValidateUpdate(retryResponse, validator);
   if (retryParsed.ok) {
+    const changeLog = buildChangeLog(params.previous, retryParsed.value.result as RunOutput);
     return {
       result: retryParsed.value.result as RunOutput,
       mode: mode.id,
-      changeLog: retryParsed.value.change_log as ChangeLogEntry[]
+      changeLog
     };
   }
 
@@ -244,6 +246,54 @@ function extractJsonPayload(response: any) {
   }
 
   return response;
+}
+
+function buildChangeLog(previous: RunOutput, next: RunOutput): ChangeLogEntry[] {
+  const changes: ChangeLogEntry[] = [];
+  const add = (path: string, before: unknown, after: unknown) => {
+    if (isEqual(before, after)) return;
+    changes.push({
+      path,
+      before: stringifyValue(before),
+      after: stringifyValue(after)
+    });
+  };
+
+  add("clean_transcript", previous.clean_transcript, next.clean_transcript);
+  add("summary", previous.summary, next.summary);
+  add("actions", previous.actions, next.actions);
+  add("tags", previous.tags, next.tags);
+
+  const prevData = (previous.data ?? {}) as Record<string, unknown>;
+  const nextData = (next.data ?? {}) as Record<string, unknown>;
+  const keys = new Set([...Object.keys(prevData), ...Object.keys(nextData)]);
+  for (const key of keys) {
+    add(`data.${key}`, prevData[key], nextData[key]);
+  }
+
+  return changes;
+}
+
+function stringifyValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function isEqual(a: unknown, b: unknown) {
+  if (a === b) return true;
+  if (typeof a === "object" && typeof b === "object") {
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 function resolveMode(id: string): ModeDefinition {

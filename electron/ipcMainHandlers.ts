@@ -1,11 +1,12 @@
 import { BrowserWindow, clipboard, dialog, ipcMain } from "electron";
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { SttClient } from "./sttClient";
 import { checkRealtimeAccess } from "./realtimeSttClient";
 import { enrichTranscript, updateWithFollowUp } from "./enrichLlm";
 import { DEFAULT_HOTKEY, getSettingsSafe, resetSettings, setSettings } from "./settings";
-import { Mode } from "../src/lib/schemas";
+import { ChangeLogEntry, Mode, RunOutput } from "../src/lib/schemas";
 import { sendWebhook, WebhookPayload } from "./n8nWebhook";
 import { getRun, listRunsWithResults, renameRun, saveRun, setRunCoverage, RunListRow } from "./historyDb";
 import { listModes, getModeById } from "./modes";
@@ -20,6 +21,16 @@ export function registerIpcHandlers(params: {
   onHotkeyChange?: (hotkey: string) => boolean;
 }) {
   const { getMainWindow, stt, sendToRenderer, openSettings, onRecordingChange, onHotkeyChange } = params;
+  const pendingUpdates = new Map<
+    string,
+    {
+      result: RunOutput;
+      mode: Mode;
+      changeLog: ChangeLogEntry[];
+      transcript: string;
+      previousId?: number | null;
+    }
+  >();
 
   ipcMain.handle("overlay.open", () => {
     const win = getMainWindow();
@@ -146,23 +157,17 @@ export function registerIpcHandlers(params: {
           mode: payload.mode,
           previous: payload.previous
         });
-        const modeDef = getModeById(mode);
-        const coverage = modeDef ? computeCoverage(modeDef, result).percent : null;
-        const runId = await saveRun({
-          name: deriveRunName(result),
-          createdAt: new Date().toISOString(),
-          mode,
-          transcript: payload.transcript,
+        const token = crypto.randomUUID();
+        pendingUpdates.set(token, {
           result,
+          mode,
           changeLog,
-          isFollowUp: true,
-          parentId: payload.previousId ?? null,
-          coverage
+          transcript: payload.transcript,
+          previousId: payload.previousId ?? null
         });
         sendToRenderer("app.state", { state: "done" });
-        sendToRenderer("llm.updated", { json: result, mode, changeLog, runId, coverage });
-        void dispatchWebhook(payload.transcript, result, mode);
-        return { result, mode, changeLog, runId, coverage };
+        sendToRenderer("llm.updatePreview", { json: result, mode, changeLog, token });
+        return { ok: true, token };
       } catch (err: any) {
         const message = err?.message ?? "Update failed.";
         sendToRenderer("llm.error", { message });
@@ -171,6 +176,35 @@ export function registerIpcHandlers(params: {
       }
     }
   );
+
+  ipcMain.handle("llm.applyUpdate", async (_event, payload: { token: string }) => {
+    const entry = pendingUpdates.get(payload.token);
+    if (!entry) {
+      throw new Error("Pending update not found.");
+    }
+    const modeDef = getModeById(entry.mode);
+    const coverage = modeDef ? computeCoverage(modeDef, entry.result).percent : null;
+    const runId = await saveRun({
+      name: deriveRunName(entry.result),
+      createdAt: new Date().toISOString(),
+      mode: entry.mode,
+      transcript: entry.transcript,
+      result: entry.result,
+      changeLog: entry.changeLog,
+      isFollowUp: true,
+      parentId: entry.previousId ?? null,
+      coverage
+    });
+    pendingUpdates.delete(payload.token);
+    sendToRenderer("llm.updated", { json: entry.result, mode: entry.mode, changeLog: entry.changeLog, runId, coverage });
+    void dispatchWebhook(entry.transcript, entry.result, entry.mode);
+    return { ok: true, runId, coverage };
+  });
+
+  ipcMain.handle("llm.discardUpdate", async (_event, payload: { token: string }) => {
+    pendingUpdates.delete(payload.token);
+    return { ok: true };
+  });
 
   ipcMain.handle("clipboard.copy", (_event, payload: { text: string }) => {
     clipboard.writeText(payload.text);

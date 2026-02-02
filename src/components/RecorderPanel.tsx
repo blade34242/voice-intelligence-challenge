@@ -12,6 +12,8 @@ export function RecorderPanel(props: {
   hotkey?: string;
   modeLabel?: string;
   languageLabel?: string;
+  followUpLabel?: string | null;
+  followUpSummary?: string | null;
 }) {
   const isRecording = props.state === "recording";
   const canStart = props.state === "idle" || props.state === "error" || props.state === "done";
@@ -23,6 +25,12 @@ export function RecorderPanel(props: {
 
   return (
     <div className="recorder-panel">
+      {props.followUpLabel ? (
+        <div className="followup-banner">
+          <div className="followup-title">{props.followUpLabel}</div>
+          {props.followUpSummary ? <div className="followup-summary">{props.followUpSummary}</div> : null}
+        </div>
+      ) : null}
       <div className="transcript-box">
         {props.transcript ? (
           <p>{props.transcript}</p>

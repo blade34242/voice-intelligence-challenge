@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { OverlayShell } from "../components/OverlayShell";
+import { StepItem } from "../components/StepList";
 import { RecorderPanel } from "../components/RecorderPanel";
 import { TabsView } from "../components/TabsView";
 import { SettingsModal } from "../components/SettingsModal";
@@ -41,6 +42,12 @@ export default function Home() {
   const [activeTransport, setActiveTransport] = useState("batch");
   const [followUpBase, setFollowUpBase] = useState<LlmResult | null>(null);
   const [followUpMode, setFollowUpMode] = useState<Mode | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    token: string;
+    result: LlmResult;
+    changeLog: ChangeLogEntry[];
+    mode: Mode;
+  } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [coverage, setCoverage] = useState<number | null>(null);
   const [currentRunId, setCurrentRunId] = useState<number | null>(null);
@@ -169,10 +176,6 @@ export default function Home() {
               .catch((err) => {
                 setError(err.message ?? "LLM error");
                 setAppState("error");
-              })
-              .finally(() => {
-                setFollowUpBase(null);
-                setFollowUpMode(null);
               });
           } else {
             ipcClient.invoke("llm.enrich", { transcript: finalText, mode: modeRef.current }).catch((err) => {
@@ -202,7 +205,12 @@ export default function Home() {
         setCurrentRunName(name);
         setCurrentRunNameSaved(name);
         setCurrentRunNameDirty(false);
+        setPendingUpdate(null);
         void refreshHistory();
+        setAppState("done");
+      }),
+      ipcClient.on("llm.updatePreview", ({ json, mode: chosenMode, changeLog, token }) => {
+        setPendingUpdate({ token, result: json, changeLog: changeLog ?? [], mode: chosenMode });
         setAppState("done");
       }),
       ipcClient.on("llm.updated", ({ json, mode: chosenMode, changeLog, runId, coverage }) => {
@@ -216,6 +224,9 @@ export default function Home() {
         setCurrentRunName(name);
         setCurrentRunNameSaved(name);
         setCurrentRunNameDirty(false);
+        setPendingUpdate(null);
+        setFollowUpBase(null);
+        setFollowUpMode(null);
         void refreshHistory();
         setAppState("done");
       }),
@@ -276,6 +287,7 @@ export default function Home() {
     setOverrideMode(null);
     setChangeLog([]);
     setExportOpen(false);
+    setPendingUpdate(null);
 
     try {
       const response = await ipcClient.invoke("stt.start");
@@ -426,11 +438,15 @@ export default function Home() {
       setAppState("error");
       return;
     }
-    if (!finalTranscript.trim()) return;
+    const regenBase = pendingUpdate?.result ?? result;
+    const combined = regenBase?.clean_transcript?.trim();
+    const transcript = combined && combined.length > 0 ? combined : finalTranscript.trim();
+    if (!transcript) return;
     setAppState("enriching");
     setChangeLog([]);
     try {
-      await ipcClient.invoke("llm.enrich", { transcript: finalTranscript, mode: overrideMode ?? mode });
+      const targetMode = overrideMode ?? resolvedMode ?? mode;
+      await ipcClient.invoke("llm.enrich", { transcript, mode: targetMode });
     } catch (err: any) {
       setError(err?.message ?? "LLM error");
       setAppState("error");
@@ -443,6 +459,28 @@ export default function Home() {
     setFollowUpMode(overrideMode ?? resolvedMode ?? "note");
     setChangeLog([]);
     handleStart();
+  };
+
+  const handleApplyUpdate = async () => {
+    if (!pendingUpdate || !ipcClient.isAvailable()) return;
+    try {
+      await ipcClient.invoke("llm.applyUpdate", { token: pendingUpdate.token });
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to apply update.");
+      setAppState("error");
+    }
+  };
+
+  const handleDiscardUpdate = async () => {
+    if (!pendingUpdate || !ipcClient.isAvailable()) return;
+    try {
+      await ipcClient.invoke("llm.discardUpdate", { token: pendingUpdate.token });
+    } catch {
+      // ignore
+    }
+    setPendingUpdate(null);
+    setFollowUpBase(null);
+    setFollowUpMode(null);
   };
 
   const handleHistoryLoad = async (id: number) => {
@@ -466,6 +504,7 @@ export default function Home() {
       setChangeLog(run.changeLog ?? []);
       setCurrentRunId(run.id);
       setCoverage(run.coverage ?? null);
+      setPendingUpdate(null);
       const name = run.name ?? "Untitled Run";
       setCurrentRunName(name);
       setCurrentRunNameSaved(name);
@@ -543,6 +582,7 @@ export default function Home() {
     setChangeLog([]);
     setFollowUpBase(null);
     setFollowUpMode(null);
+    setPendingUpdate(null);
     setCurrentRunId(null);
     setCoverage(null);
     setCurrentRunName("Untitled Run");
@@ -570,6 +610,38 @@ export default function Home() {
   const quickModeLabel = resolvedMode
     ? `Auto (${modeOptions.find((m) => m.id === resolvedMode)?.label ?? resolvedMode})`
     : "Auto (LLM decides)";
+  const followUpLabel =
+    followUpBase && currentRunId
+      ? `Updating Run #${currentRunId} (${followUpMode ?? resolvedMode ?? "auto"})`
+      : null;
+  const followUpSummary = followUpBase?.summary ?? null;
+
+  const flowPhase = (() => {
+    if (appState === "recording") return "record";
+    if (appState === "finalizing_transcript") return "finalize";
+    if (appState === "enriching") return "enrich";
+    if (pendingUpdate) return "review";
+    if (appState === "done") return "done";
+    return "record";
+  })();
+
+  const isFollowUpFlow = Boolean(followUpBase || pendingUpdate || followUpMode);
+  const stepOrder = isFollowUpFlow
+    ? ["record", "finalize", "enrich", "review", "done"]
+    : ["record", "finalize", "enrich", "done"];
+  const stepLabels: Record<string, string> = {
+    record: "Record",
+    finalize: "Finalize",
+    enrich: "Enrich",
+    review: "Review",
+    done: "Done"
+  };
+  const activeIndex = Math.max(0, stepOrder.indexOf(flowPhase));
+  const steps: StepItem[] = stepOrder.map((key, index) => ({
+    key,
+    label: stepLabels[key],
+    state: index < activeIndex ? "done" : index === activeIndex ? "active" : "pending"
+  }));
 
   return (
     <main className="app">
@@ -580,6 +652,7 @@ export default function Home() {
         transportLabel={transportLabel}
         transportTone={activeTransport === "realtime" ? "realtime" : "batch"}
         coverage={coverage}
+        steps={steps}
         allowModeChange={false}
         modeDisplay={quickModeLabel}
         modeControl={
@@ -703,6 +776,8 @@ export default function Home() {
                 hotkey={settings?.hotkey}
                 modeLabel={quickModeLabel}
                 languageLabel={languageLabel}
+                followUpLabel={followUpLabel}
+                followUpSummary={followUpSummary}
               />
             )}
           </section>
@@ -724,6 +799,48 @@ export default function Home() {
                   <button className="secondary" onClick={handleExportWebhookJson}>
                     Export Webhook JSON
                   </button>
+                </div>
+              </div>,
+              document.body
+            )
+          : null}
+        {pendingUpdate
+          ? createPortal(
+              <div className="modal-backdrop">
+                <div className="modal update-preview">
+                  <h3>Review Follow-up Changes</h3>
+                  <div className="update-preview-grid">
+                    <div>
+                      <div className="preview-title">Before</div>
+                      <div className="preview-box">{followUpBase?.summary ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="preview-title">After</div>
+                      <div className="preview-box">{pendingUpdate.result.summary ?? "—"}</div>
+                    </div>
+                  </div>
+                  <div className="preview-title">Changes</div>
+                  <div className="change-log">
+                    {pendingUpdate.changeLog.length ? (
+                      <ul>
+                        {pendingUpdate.changeLog.map((entry, index) => (
+                          <li key={`${entry.path}-${index}`}>
+                            <strong>{entry.path}</strong>: {entry.before ?? "—"} → {entry.after ?? "—"}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="muted">No changes detected.</p>
+                    )}
+                  </div>
+                  <div className="button-row">
+                    <button className="primary" onClick={handleApplyUpdate}>
+                      Apply Changes
+                    </button>
+                    <button className="secondary" onClick={handleDiscardUpdate}>
+                      Discard
+                    </button>
+                  </div>
                 </div>
               </div>,
               document.body

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { AppState } from "../lib/ipcClient";
 import { Mode } from "../lib/schemas";
+import { StepItem, StepList } from "./StepList";
 import { MODES } from "../lib/modes";
 
 const statusLabels: Record<AppState, string> = {
@@ -23,6 +24,7 @@ export function OverlayShell(props: {
   allowModeChange?: boolean;
   modeDisplay?: string;
   modeControl?: ReactNode;
+  steps?: StepItem[];
   onClose: () => void;
   actions?: ReactNode;
   children: ReactNode;
@@ -83,6 +85,8 @@ export function OverlayShell(props: {
           <span className={`coverage-badge ${coverageTone}`}>Schema {props.coverage}%</span>
         ) : null}
       </div>
+
+      {props.steps ? <StepList steps={props.steps} /> : null}
 
       <div className="content">{props.children}</div>
 
