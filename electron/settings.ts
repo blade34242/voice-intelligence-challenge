@@ -8,7 +8,8 @@ export type AppSettings = {
   sttTransport?: string;
 };
 
-export const DEFAULT_HOTKEY = "CommandOrControl+Shift+Space";
+export const DEFAULT_HOTKEY =
+  process.platform === "win32" ? "CommandOrControl+Shift+R" : "CommandOrControl+Shift+Space";
 
 let store: any | null = null;
 let storeInit: Promise<any> | null = null;

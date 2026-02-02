@@ -29,6 +29,10 @@ export function SettingsModal(props: {
     status: "idle",
     message: ""
   });
+  const defaultHotkey =
+    typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("win")
+      ? "CommandOrControl+Shift+R"
+      : "CommandOrControl+Shift+Space";
 
   useEffect(() => {
     if (props.settings) {
@@ -70,7 +74,7 @@ export function SettingsModal(props: {
           <input
             type="text"
             value={hotkey}
-            placeholder="CommandOrControl+Shift+Space"
+            placeholder={defaultHotkey}
             onChange={(event) => {
               setHotkeyTouched(true);
               setHotkey(event.target.value);

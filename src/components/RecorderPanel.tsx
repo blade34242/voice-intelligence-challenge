@@ -19,7 +19,11 @@ export function RecorderPanel(props: {
   const canStart = props.state === "idle" || props.state === "error" || props.state === "done";
   const showStop = props.state === "recording";
   const showQuickStart = props.state === "idle" || props.state === "error";
-  const hotkeyLabel = props.hotkey?.trim() || "Ctrl+Shift+Space";
+  const defaultHotkey =
+    typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("win")
+      ? "Ctrl+Shift+R"
+      : "Ctrl+Shift+Space";
+  const hotkeyLabel = props.hotkey?.trim() || defaultHotkey;
   const modeLabel = props.modeLabel ?? "Auto (LLM decides)";
   const languageLabel = props.languageLabel ?? "Auto";
 
