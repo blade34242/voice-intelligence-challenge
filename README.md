@@ -161,7 +161,7 @@ Die App lädt beim Start **alle Mode‑Dateien** aus diesem Ordner und nutzt sie
 
 ---
 
-##Prompts:
+## Prompts:
 - Basis‑Prompt & LLM‑Aufruf: `electron/enrichLlm.ts`  
 - Mode‑Prompts (system + userHint): `electron/modes/*.ts`
 
