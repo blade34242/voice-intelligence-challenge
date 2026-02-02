@@ -189,6 +189,23 @@ Warum JS/TS statt JSON?
 
 ---
 
+## Zukünftige Erweiterungen (optional)
+Diese Ideen gehen über das Contest‑MVP hinaus, passen aber gut zum Produkt:
+
+**Sehr guter Fit (hoher Nutzen, geringe Komplexität)**
+- **Supabase/Postgres Sync**: Verlauf über Geräte + Teams, Tags, Sharing.
+- **Team‑Style Presets**: Output‑Templates pro Team/Projekt (z. B. Sales, Support, PM).
+
+**Guter Fit (wenn Zielgruppe klar ist)**
+- **Direct Actions**: Kalender‑Eintrag, E‑Mail‑Entwurf, Ticket‑Create (Jira/Linear).
+- **Workflow‑Routing**: `kind/route` triggert automatisierte Abläufe (n8n, Zapier).
+
+**Mittel (nur mit echten Wissensquellen)**
+- **RAG über Firmen‑Docs**: Kontext aus Handbüchern/Specs (mehr Komplexität).
+- **Semantic Search**: ähnliche Runs finden, Wiederverwendung.
+
+---
+
 ## Output‑Struktur (Schema)
 Die vollständige Schema‑Definition **inkl. Beispiele für alle Typen** steht hier:  
 `docs/webhook-payloads.md`
