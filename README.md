@@ -79,7 +79,7 @@ Wenn du einen **Git Tag** (z. B. `v0.1.5`) pushst, baut GitHub Actions automat
 - **Windows** → `.exe` (und ggf. `.zip`/`.yml`)
 - **Linux** → `.AppImage`
 
-Die fertigen Dateien findest du:
+Fertigen Dateien findest du:
 - **GitHub Release** (Assets der Version)
 - **Actions → Artifacts** (falls du nur Artifacts möchtest)
 
