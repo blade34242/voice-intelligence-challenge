@@ -7,9 +7,6 @@ export function RecorderPanel(props: {
   onStart: () => void;
   onStop: () => void;
   onSettings: () => void;
-  onReset: () => void;
-  transportLabel?: string;
-  transportTone?: "realtime" | "batch";
   error?: string | null;
   notice?: string | null;
   hotkey?: string;
@@ -19,7 +16,6 @@ export function RecorderPanel(props: {
   const isRecording = props.state === "recording";
   const canStart = props.state === "idle" || props.state === "error" || props.state === "done";
   const showStop = props.state === "recording";
-  const showReset = props.state === "error";
   const showQuickStart = props.state === "idle" || props.state === "error";
   const hotkeyLabel = props.hotkey?.trim() || "Ctrl+Shift+Space";
   const modeLabel = props.modeLabel ?? "Auto (LLM decides)";
@@ -27,13 +23,6 @@ export function RecorderPanel(props: {
 
   return (
     <div className="recorder-panel">
-      {props.transportLabel ? (
-        <div className="recorder-meta">
-          <span className={`transport-pill ${props.transportTone ?? "batch"}`}>
-            Transcription: {props.transportLabel}
-          </span>
-        </div>
-      ) : null}
       <div className="transcript-box">
         {props.transcript ? (
           <p>{props.transcript}</p>
@@ -83,11 +72,6 @@ export function RecorderPanel(props: {
             Start Recording
           </button>
         )}
-        {showReset ? (
-          <button className="secondary" onClick={props.onReset}>
-            Reset
-          </button>
-        ) : null}
         {!isRecording ? (
           <button className="secondary" onClick={props.onSettings}>
             Settings

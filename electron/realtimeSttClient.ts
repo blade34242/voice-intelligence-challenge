@@ -60,7 +60,7 @@ export class RealtimeSttClient {
     }
 
     const model = resolveRealtimeModel(getSttModel());
-    const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+    const wsUrl = buildRealtimeWsUrl();
 
     this.readyPromise = new Promise((resolve, reject) => {
       this.readyResolve = resolve;
@@ -181,19 +181,12 @@ export class RealtimeSttClient {
 
     this.ws.send(
       JSON.stringify({
-        type: "session.update",
+        type: "transcription_session.update",
         session: {
-          type: "transcription",
-          audio: {
-            input: {
-              format: {
-                type: "audio/pcm",
-                rate: SAMPLE_RATE
-              },
-              transcription,
-              turn_detection: null
-            }
-          }
+          input_audio_format: "pcm16",
+          input_audio_transcription: transcription,
+          turn_detection: null,
+          input_audio_noise_reduction: null
         }
       })
     );
@@ -269,7 +262,7 @@ export async function checkRealtimeAccess(): Promise<{ ok: boolean; message: str
   }
 
   const model = resolveRealtimeModel(selectedModel);
-  const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+  const wsUrl = buildRealtimeWsUrl();
 
   return new Promise((resolve) => {
     let settled = false;
@@ -303,16 +296,12 @@ export async function checkRealtimeAccess(): Promise<{ ok: boolean; message: str
       }
       ws.send(
         JSON.stringify({
-          type: "session.update",
+          type: "transcription_session.update",
           session: {
-            type: "transcription",
-            audio: {
-              input: {
-                format: { type: "audio/pcm", rate: SAMPLE_RATE },
-                transcription,
-                turn_detection: null
-              }
-            }
+            input_audio_format: "pcm16",
+            input_audio_transcription: transcription,
+            turn_detection: null,
+            input_audio_noise_reduction: null
           }
         })
       );
@@ -336,7 +325,9 @@ export async function checkRealtimeAccess(): Promise<{ ok: boolean; message: str
       if (!event) return;
       if (event.type === "error" && "error" in event) {
         clearTimeout(timeout);
-        finish(false, event.error?.message ?? "Realtime error.");
+        const rawMessage = event.error?.message ?? "Realtime error.";
+        const friendly = friendlyRealtimeError(rawMessage);
+        finish(false, friendly);
         ws.close();
         return;
       }
@@ -353,14 +344,32 @@ export async function checkRealtimeAccess(): Promise<{ ok: boolean; message: str
 
     ws.on("error", (err) => {
       clearTimeout(timeout);
-      finish(false, err?.message ?? "Realtime connection error.");
+      finish(false, friendlyRealtimeError(err?.message ?? "Realtime connection error."));
     });
 
     ws.on("close", (code, reason) => {
       if (settled) return;
       clearTimeout(timeout);
       const suffix = reason ? ` (${reason.toString()})` : "";
-      finish(false, `Realtime closed (code ${code})${suffix}.`);
+      finish(false, friendlyRealtimeError(`Realtime closed (code ${code})${suffix}.`));
     });
   });
+}
+
+function buildRealtimeWsUrl() {
+  return "wss://api.openai.com/v1/realtime?intent=transcription";
+}
+
+function friendlyRealtimeError(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("not supported in realtime") || normalized.includes("not permitted") || normalized.includes("access")) {
+    return "Realtime access is not enabled for this key/model.";
+  }
+  if (normalized.includes("eai_again") || normalized.includes("enotfound")) {
+    return "Network/DNS error reaching api.openai.com.";
+  }
+  if (normalized.includes("timeout")) {
+    return "Network timeout reaching api.openai.com.";
+  }
+  return message;
 }

@@ -113,9 +113,10 @@ Hinweise:
 - Hotkey **stoppt** Aufnahme
 - Fenster kann per Tray/App‑Icon geöffnet werden
 
-### 2) Non‑Realtime STT (stabiler als Beta‑Realtime)
-- Audio wird gesammelt und nach Stop transkribiert
-- Stabiler, kein Realtime‑Beta notwendig
+### 2) Realtime STT (optional) + Batch‑Fallback
+- **Realtime** (live) oder **Batch** (stabil) wählbar
+- Wenn Realtime nicht verfügbar ist (Access/Netzwerk), fällt die App automatisch auf Batch zurück
+- Damit bleibt die Demo stabil, auch ohne Realtime‑Freigabe
 
 ### 3) Strukturierter Output statt Markdown
 - Ergebnis kommt als **strukturierte Objekte**
@@ -142,9 +143,9 @@ Wir haben den Plan gezielt erweitert, um **Stabilität**, **Nutzbarkeit** und **
 
 ## Modell‑Auswahl (warum?)
 Mehrere STT‑Modelle ermöglichen **Speed vs. Accuracy** je nach Gerät und Aufnahme:
-- `gpt-4o-mini-transcribe` → schnell & günstig
-- `gpt-4o-transcribe` → höhere Genauigkeit
-- `whisper-1` → Legacy/Fallback
+- `gpt-4o-mini-transcribe` → schnell & günstig (Batch + Realtime)
+- `gpt-4o-transcribe` → höhere Genauigkeit (Batch + Realtime)
+- `whisper-1` → Legacy/Fallback (nur Batch)
 
 ---
 
@@ -202,6 +203,7 @@ Details & Beispiele: `docs/n8n-webhook.md`
 ## Einstellungen
 - OpenAI API Key
 - Transcription Model (gpt-4o-mini-transcribe / gpt-4o-transcribe / whisper-1)
+- Transcription Transport: **Batch (stable)** oder **Realtime (live)**
 - Hotkey (editierbar, System‑abhängig)
 - Sprache für Transkription (Auto / de / en / fr / it / es)
 - Optional: Webhook URL + Secret

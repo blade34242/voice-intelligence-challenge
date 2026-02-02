@@ -698,9 +698,6 @@ export default function Home() {
                 onStart={handleStart}
                 onStop={handleStop}
                 onSettings={() => setSettingsOpen(true)}
-                onReset={resetSession}
-                transportLabel={transportLabel}
-                transportTone={activeTransport === "realtime" ? "realtime" : "batch"}
                 error={error}
                 notice={notice}
                 hotkey={settings?.hotkey}

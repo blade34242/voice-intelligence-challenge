@@ -87,7 +87,7 @@ export class SttClient {
           await this.batch.start();
           return {
             transport: "batch",
-            notice: `Realtime unavailable (${message}). Using Batch instead.`
+            notice: `Realtime unavailable (${formatRealtimeNotice(message)}). Using Batch instead.`
           };
         }
         this.realtime = null;
@@ -162,8 +162,29 @@ function shouldFallbackToBatch(message: string) {
     normalized.includes("realtime mode") ||
     normalized.includes("not permitted") ||
     normalized.includes("not available") ||
-    normalized.includes("access")
+    normalized.includes("access") ||
+    normalized.includes("eai_again") ||
+    normalized.includes("enotfound") ||
+    normalized.includes("network") ||
+    normalized.includes("fetch") ||
+    normalized.includes("socket") ||
+    normalized.includes("timeout") ||
+    normalized.includes("connect")
   );
+}
+
+function formatRealtimeNotice(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("not supported in realtime") || normalized.includes("not permitted") || normalized.includes("access")) {
+    return "This key/model does not have Realtime access";
+  }
+  if (normalized.includes("eai_again") || normalized.includes("enotfound")) {
+    return "Network/DNS error reaching api.openai.com";
+  }
+  if (normalized.includes("timeout")) {
+    return "Network timeout reaching api.openai.com";
+  }
+  return message;
 }
 
 function createWavBuffer(pcm: Buffer, sampleRate: number, channels: number, bitsPerSample: number) {
